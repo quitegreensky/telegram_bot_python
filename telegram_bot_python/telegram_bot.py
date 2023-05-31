@@ -141,7 +141,7 @@ class TelegramBot:
             if cmd_text=="/help":
                 continue
             msg+=f"{cmd_text}\n"
-        self.broadcast_message(msg)
+        self.send_message(chat_id, msg)
 
     def run_bot(self, update_interval=1):
         self.logger("Bot started...")
