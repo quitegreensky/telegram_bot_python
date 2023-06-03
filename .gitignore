@@ -10,6 +10,10 @@ dist/
 # Compiled Java class files
 *.class
 
+*.code-workspace
+
+*.json
+
 # Compiled Python bytecode
 *.py[cod]
 
