@@ -11,7 +11,7 @@ server_url = "myserver.com"
 mybot = TelegramBot("mytoken", "users_db.json", auto_help=True)
 
 # introducing our webhook endpoint to telegram servers
-mybot.setWebhook(f"{server_url}/hello")
+mybot.setWebhook(f"{server_url}/webhook")
 
 # defining a callback object for /hello command
 def hello_callback(chat_id, cmd):
