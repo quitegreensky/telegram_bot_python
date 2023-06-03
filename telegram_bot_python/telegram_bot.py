@@ -173,10 +173,3 @@ class TelegramBot:
         if req.status_code!=200:
             raise
         return req.text
-
-# if __name__=="__main__":
-#     bot = TelegramBot("1637954061:AAEDpLDQ0y4M5cQUXICkUR_0HyvYJSW7RTo", "idxs.json")
-#     def help_func(chat_id, *args):
-#         bot.send_message(chat_id, "help")
-#     bot.add_command("/help", help_func)
-#     bot.run_bot()
