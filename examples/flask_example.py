@@ -22,7 +22,7 @@ mybot.add_command("/hello", hello_callback)
 
 app = Flask(__name__)
 
-@app.route("/webhook", methods=["GET"])
+@app.route("/webhook", methods=["GET", "POST"])
 def webhook():
     update = request.json
     mybot.update(update)
