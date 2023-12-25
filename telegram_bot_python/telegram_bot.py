@@ -122,7 +122,9 @@ class TelegramBot:
         update_id =last_message["update_id"]
         sender = last_message["message"]["from"]["first_name"]
         sender_is_bot = last_message["message"]["from"]["is_bot"]
-        sender_text = last_message["message"]["text"]
+        sender_text = last_message["message"]["text"].strip()
+        if sender_text[0]=="@":
+            sender_text=sender_text.split(" ",1)[-1]
 
         if sender_is_bot:
             return
