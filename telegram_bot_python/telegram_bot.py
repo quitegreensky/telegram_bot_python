@@ -63,9 +63,25 @@ class TelegramBot:
                 return True
         return False
 
-    def send_message(self, chat_id, text):
-        message_url = f"https://api.telegram.org/bot{self.token}/sendMessage?chat_id={chat_id}&text={text}"
-        req = requests.get(message_url)
+    def send_message(self, chat_id, text, inline_keyboard=None):
+        """
+        keyboard = [
+            [{"text": "Button 1", "callback_data": "button_1"}],
+            [{"text": "Button 2", "callback_data": "button_2"}]
+        ]
+        commands:
+        switch_inline_query
+        switch_inline_query_current_chat
+        ]"""
+        message_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": text,
+        }
+        if inline_keyboard:
+            payload["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
+
+        req = requests.post(message_url, json=payload)
         if req.status_code!=200:
             return
         return True
