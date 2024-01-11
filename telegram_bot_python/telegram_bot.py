@@ -11,6 +11,7 @@ class TelegramBot:
         self.commands = []
         self._offset = 0
         self._handler = None # handler for non command messages
+        self._handlers = {}
 
         self.auto_help=auto_help
         if self.auto_help:
@@ -19,8 +20,11 @@ class TelegramBot:
     def add_command(self, text: str, command: object, args: list = []) -> bool:
         self.commands.append([text, command, args])
 
-    def set_handler(self, _handler: object) -> bool:
-        self._handler = _handler
+    def set_handler(self, name: str, _handler: object) -> bool:
+        self._handlers[name] = _handler
+
+    def activate_handler(self, name):
+        self._handler = self._handlers.get(name)
 
     def save_js(self, dic):
         try:
@@ -208,8 +212,9 @@ class TelegramBot:
         url = f'https://api.telegram.org/file/bot{self.token}/{file_path}'
         response = requests.get(url, stream=True)
         with open(local_filename, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=128):
+            for chunk in response.iter_content(chunk_size=256):
                 f.write(chunk)
+        return True
 
     def _auto_help_obj(self, chat_id, cmd):
         msg = ""

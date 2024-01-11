@@ -18,7 +18,8 @@ def regular_message_handler(*args):
 
 # binding hello_callback object to /hello command
 mybot.add_command("/hello", hello_callback)
-mybot.set_handler(regular_message_handler)
+mybot.set_handler("regular", regular_message_handler)
+mybot.activate_handler("regular")
 
 if __name__=="__main__":
     mybot.run_bot(5)
