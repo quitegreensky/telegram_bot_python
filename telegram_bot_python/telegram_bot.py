@@ -187,7 +187,7 @@ class TelegramBot:
 
         # it's a non command message
         if self._handler:
-            self._handler(sender_text, photo_id)
+            self._handler(chat_id, sender_text, photo_id)
 
     def get_file_path(self, file_id):
         url = f"https://api.telegram.org/bot{self.token}/getFile"
