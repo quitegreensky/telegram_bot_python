@@ -10,7 +10,7 @@ def hello_callback(chat_id, cmd):
     mybot.send_message(chat_id, "hello")
 
 def regular_message_handler(*args):
-    text, photo = args
+    chat_id, text, photo = args
     if photo:
         photo_path = mybot.get_file_path(photo)
         mybot.download_file(photo_path, "photo.jpg")
