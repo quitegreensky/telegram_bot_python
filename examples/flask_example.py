@@ -17,8 +17,16 @@ mybot.setWebhook(f"{server_url}/webhook")
 def hello_callback(chat_id, cmd):
     mybot.send_message(chat_id, "hello")
 
+def regular_message_handler(*args):
+    text, photo = args
+    if photo:
+        photo_path = mybot.get_file_path(photo)
+        mybot.download_file(photo_path, "photo.jpg")
+    print(text)
+
 # binding hello_callback object to /hello command
 mybot.add_command("/hello", hello_callback)
+mybot.add_handler(regular_message_handler)
 
 app = Flask(__name__)
 

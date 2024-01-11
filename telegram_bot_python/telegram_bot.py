@@ -10,6 +10,7 @@ class TelegramBot:
         self.db_file = db_file
         self.commands = []
         self._offset = 0
+        self._handler = None # handler for non command messages
 
         self.auto_help=auto_help
         if self.auto_help:
@@ -17,6 +18,9 @@ class TelegramBot:
 
     def add_command(self, text: str, command: object, args: list = []) -> bool:
         self.commands.append([text, command, args])
+
+    def add_handler(self, _handler: object) -> bool:
+        self._handler = _handler
 
     def save_js(self, dic):
         try:
@@ -132,13 +136,27 @@ class TelegramBot:
             return
         self._offset = last_chat_id
         last_message = self.get_chat_id_from_results(results, self._offset)
-        chat_id = str(last_message["message"]["chat"]["id"])
+        message_content = last_message["message"]
+        chat_id = str(message_content["chat"]["id"])
         update_id =last_message["update_id"]
-        sender = last_message["message"]["from"]["first_name"]
-        sender_is_bot = last_message["message"]["from"]["is_bot"]
-        sender_text = last_message["message"]["text"].strip()
-        if sender_text[0]=="@":
-            sender_text=sender_text.split(" ",1)[-1]
+        sender = message_content["from"]["first_name"]
+        sender_is_bot = message_content["from"]["is_bot"]
+
+        photo_id = ""
+        if "text" in message_content:
+            sender_text = message_content["text"]
+        else:
+            if "photo" in message_content:
+                photo_id = message_content["photo"][-1]["file_id"]
+                if "caption" in message_content:
+                    sender_text = message_content["caption"]
+                else:
+                    sender_text = ""
+
+        sender_text = sender_text.strip()
+        if sender_text:
+            if sender_text[0]=="@":
+                sender_text=sender_text.split(" ",1)[-1]
 
         if sender_is_bot:
             return
@@ -165,11 +183,31 @@ class TelegramBot:
             if sender_text.startswith(cmd_text):
                 _command_arg = sender_text[len(cmd_text)+1:]
                 cmd_obj(chat_id, _command_arg, *cmd_args)
+                return
+
+        # it's a non command message
+        if self._handler:
+            self._handler(sender_text, photo_id)
+
+    def get_file_path(self, file_id):
+        url = f"https://api.telegram.org/bot{self.token}/getFile"
+        response = requests.get(url, params={"file_id": file_id})
+        file_path = response.json()["result"]["file_path"]
+        return file_path
+
+    def download_file(self, file_path, local_filename):
+        url = f'https://api.telegram.org/file/bot{self.token}/{file_path}'
+        response = requests.get(url, stream=True)
+        with open(local_filename, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=128):
+                f.write(chunk)
 
     def _auto_help_obj(self, chat_id, cmd):
         msg = ""
         for _command in self.commands:
             cmd_text = _command[0]
+            if cmd_text.startswith("/_"): # internal commands
+                continue
             if cmd_text=="/help":
                 continue
             msg+=f"{cmd_text}\n"
