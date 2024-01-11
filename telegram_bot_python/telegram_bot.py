@@ -167,7 +167,7 @@ class TelegramBot:
             if sender_text[0]=="@":
                 sender_text=sender_text.split(" ",1)[-1]
 
-        if sender_is_bot:
+        if sender_is_bot and not message_content.get("forward_date"): # Forwards from bot are accepted
             return
 
         if self.is_id_exists(chat_id):
