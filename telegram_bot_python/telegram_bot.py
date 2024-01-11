@@ -155,6 +155,12 @@ class TelegramBot:
                     sender_text = message_content["caption"]
                 else:
                     sender_text = ""
+            if "document" in message_content:
+                photo_id = message_content["document"]["file_id"]
+                if "caption" in message_content:
+                    sender_text = message_content["caption"]
+                else:
+                    sender_text = ""
 
         sender_text = sender_text.strip()
         if sender_text:
