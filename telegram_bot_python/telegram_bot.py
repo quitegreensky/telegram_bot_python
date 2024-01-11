@@ -19,7 +19,7 @@ class TelegramBot:
     def add_command(self, text: str, command: object, args: list = []) -> bool:
         self.commands.append([text, command, args])
 
-    def add_handler(self, _handler: object) -> bool:
+    def set_handler(self, _handler: object) -> bool:
         self._handler = _handler
 
     def save_js(self, dic):

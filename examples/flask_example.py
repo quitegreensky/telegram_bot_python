@@ -26,7 +26,7 @@ def regular_message_handler(*args):
 
 # binding hello_callback object to /hello command
 mybot.add_command("/hello", hello_callback)
-mybot.add_handler(regular_message_handler)
+mybot.set_handler(regular_message_handler)
 
 app = Flask(__name__)
 
