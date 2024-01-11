@@ -90,7 +90,7 @@ class TelegramBot:
             return
         return True
 
-    def send_document(self, chat_id, file_path, caption=""):
+    def send_document(self, chat_id, file_path, caption="", inline_keyboard=None):
         message_url = f"https://api.telegram.org/bot{self.token}/sendDocument"
         files = {
             'document': open(file_path, 'rb')
@@ -99,6 +99,9 @@ class TelegramBot:
             "chat_id": chat_id,
             "caption": caption
         }
+        if inline_keyboard:
+            data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
+
         req = requests.post(message_url, files=files, data=data)
         if req.status_code!=200:
             return
