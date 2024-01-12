@@ -48,7 +48,7 @@ class TelegramBot:
         if self.is_id_exists(chat_id):
             return False
         content = self.load_js()
-        content[chat_id] = {"last_update": None}
+        content[chat_id] = {}
         self.save_js(content)
         return True
 
@@ -174,19 +174,11 @@ class TelegramBot:
         if sender_is_bot and not message_content.get("forward_date"): # Forwards from bot are accepted
             return
 
-        if self.is_id_exists(chat_id):
-            user_update_id = self.id_last_update(chat_id)
-            if user_update_id:
-                if update_id<=user_update_id:
-                    # already done
-                    return
-            self.id_last_update(chat_id, update_id)
-        elif sender_text=="/start":
-            self.add_new_id(chat_id)
-            self.send_message(chat_id, f"Welcome {sender}. Press /help to see commands")
-            self.id_last_update(chat_id, update_id)
-            return
-        else:
+        if not self.is_id_exists(chat_id):
+            if sender_text=="/start":
+                self.add_new_id(chat_id)
+                self.send_message(chat_id, f"Welcome {sender}. Press /help to see commands")
+                self.id_last_update(chat_id, update_id)
             return
 
         for _command in self.commands:
