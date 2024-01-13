@@ -2,6 +2,7 @@ import requests
 import time
 import json
 import threading
+from pprint import pprint
 
 
 class TelegramBot:
@@ -160,11 +161,21 @@ class TelegramBot:
             return
         self.set_id_last_update(last_chat_id)
         last_message = self.get_chat_id_from_results(results, last_chat_id)
-        message_content = last_message["message"]
-        chat_id = str(message_content["chat"]["id"])
-        update_id =last_message["update_id"]
-        sender = message_content["from"]["first_name"]
-        sender_is_bot = message_content["from"]["is_bot"]
+
+        if "message" in last_message:
+            message_content = last_message.get("message")
+            chat_id = str(message_content["chat"]["id"])
+            sender = message_content["from"]["first_name"]
+            sender_is_bot = message_content["from"]["is_bot"]
+
+        elif "channel_post" in last_message:
+            message_content = last_message.get("channel_post")
+            chat_id = str(message_content["chat"]["id"])
+            sender = message_content["sender_chat"]["id"]
+            sender_is_bot = True if message_content["chat"]["id"] != sender else False
+        else:
+            print("unhandled message type ",last_message)
+            return
 
         photo_id = ""
         if "text" in message_content:
@@ -187,7 +198,6 @@ class TelegramBot:
             else:
                 # UnSupported message type
                 return
-
 
         sender_text = sender_text.strip()
         if sender_text:
