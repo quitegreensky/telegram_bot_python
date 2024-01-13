@@ -9,7 +9,6 @@ class TelegramBot:
         self.token = token
         self.db_file = db_file
         self.commands = []
-        self._offset = 0
         self._handler = None # handler for non command messages
         self._handlers = {}
 
@@ -48,25 +47,37 @@ class TelegramBot:
         if self.is_id_exists(chat_id):
             return False
         content = self.load_js()
-        content[chat_id] = {}
+        if not content.get('users'):
+            content['users'] = {}
+        content["users"][chat_id] = {}
         self.save_js(content)
         return True
 
-    def id_last_update(self, chat_id, _update_id=None):
+    def get_id_last_update(self):
         content = self.load_js()
-        if not _update_id:
-            return content[chat_id]["last_update"]
-        content[chat_id]["last_update"] = _update_id
+        if not content.get("last_update"):
+            content["last_update"] = -1
+            self.save_js(content)
+            return -1
+        return content["last_update"]
+
+    def set_id_last_update(self, _update_id):
+        content = self.load_js()
+        content["last_update"] = _update_id
         self.save_js(content)
         return True
 
     def all_chat_ids(self):
         content = self.load_js()
-        return content.keys()
+        return content["users"].keys()
 
     def is_id_exists(self, chat_id):
         content = self.load_js()
-        for line in content.keys():
+        if not content.get("users"):
+            content["users"] = {}
+            self.save_js(content)
+            return False
+        for line in content["users"].keys():
             if line==str(chat_id):
                 return True
         return False
@@ -128,8 +139,11 @@ class TelegramBot:
     def update(self, update:list=None):
         results = update
         if not results:
+            params = {
+                "offset": self.get_id_last_update()+1
+            }
             update_url = f"https://api.telegram.org/bot{self.token}/getUpdates"
-            req = requests.get(update_url)
+            req = requests.get(update_url, params=params)
             if req.status_code!=200:
                 return
             results = req.json()["result"]
@@ -139,10 +153,10 @@ class TelegramBot:
             results = [update]
 
         last_chat_id = self.get_latest_chat_id(results)
-        if last_chat_id <= self._offset and self._offset!=0:
+        if last_chat_id <= self.get_id_last_update():
             return
-        self._offset = last_chat_id
-        last_message = self.get_chat_id_from_results(results, self._offset)
+        self.set_id_last_update(last_chat_id)
+        last_message = self.get_chat_id_from_results(results, last_chat_id)
         message_content = last_message["message"]
         chat_id = str(message_content["chat"]["id"])
         update_id =last_message["update_id"]
@@ -178,7 +192,6 @@ class TelegramBot:
             if sender_text=="/start":
                 self.add_new_id(chat_id)
                 self.send_message(chat_id, f"Welcome {sender}. Press /help to see commands")
-                self.id_last_update(chat_id, update_id)
             return
 
         for _command in self.commands:
