@@ -25,6 +25,9 @@ class TelegramBot:
     def activate_handler(self, name):
         self._handler = self._handlers.get(name)
 
+    def deactivate_handler(self):
+        self._handler = None
+
     def save_js(self, dic):
         try:
             with open(self.db_file, "wt") as json_file:
