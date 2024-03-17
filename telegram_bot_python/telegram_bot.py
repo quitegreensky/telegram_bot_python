@@ -73,6 +73,8 @@ class TelegramBot:
 
     def all_chat_ids(self):
         content = self.load_js()
+        if not content.get("users"):
+            return []
         return content["users"].keys()
 
     def is_id_exists(self, chat_id):
@@ -85,6 +87,27 @@ class TelegramBot:
             if line==str(chat_id):
                 return True
         return False
+
+    def send_photo(self, chat_id, image_path, text, inline_keyboard=None):
+        with open(image_path, 'rb') as f:
+            image_file = f.read()
+
+        files = {
+            "photo": image_file
+        }
+        data = {
+            "chat_id": chat_id,
+            "caption": text
+        }
+        if inline_keyboard:
+            data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
+
+        message_url = f"https://api.telegram.org/bot{self.token}/sendPhoto"
+        req = requests.post(message_url, data=data, files=files)
+        if req.status_code!=200:
+            return
+        return True
+
 
     def send_message(self, chat_id, text, inline_keyboard=None):
         """

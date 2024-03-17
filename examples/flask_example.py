@@ -11,7 +11,8 @@ server_url = "myserver.com"
 mybot = TelegramBot("mytoken", "users_db.json", auto_help=True)
 
 # introducing our webhook endpoint to telegram servers
-mybot.setWebhook(f"{server_url}/webhook")
+secret = "mysecret1234"
+mybot.setWebhook(f"{server_url}/webhook/{secret}")
 
 # defining a callback object for /hello command
 def hello_callback(chat_id, cmd):
@@ -31,7 +32,7 @@ mybot.activate_handler("regular")
 
 app = Flask(__name__)
 
-@app.route("/webhook", methods=["GET", "POST"])
+@app.route(f"/webhook/{secret}", methods=["GET", "POST"])
 def webhook():
     update = request.json
     mybot.update(update)
