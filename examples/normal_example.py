@@ -21,5 +21,8 @@ mybot.add_command("/hello", hello_callback)
 mybot.set_handler("regular", regular_message_handler)
 mybot.activate_handler("regular")
 
+# init menu after adding all commands
+mybot.init_menu()
+
 if __name__=="__main__":
     mybot.run_bot(5)

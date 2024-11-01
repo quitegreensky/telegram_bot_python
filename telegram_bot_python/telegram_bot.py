@@ -17,8 +17,31 @@ class TelegramBot:
         if self.auto_help:
             self.add_command("/help", self._auto_help_obj)
 
+    def init_menu(self):
+        commands = [
+            {"command": _command[0][1:], "description": _command[0][1:]}  # Remove "/" from command text
+            for _command in self.commands
+            if not _command[0].startswith("/_") and _command[0] != "/help"
+        ]
+
+        payload = {
+            "commands": commands
+        }
+
+        response = requests.post(
+            f"https://api.telegram.org/bot{self.token}/setMyCommands",
+            json=payload
+        )
+        if response.status_code != 200:
+            print("Failed to set bot commands:", response.text)
+            return True
+        else:
+            print("Bot command menu set successfully!")
+            return False
+
     def add_command(self, text: str, command: object, args: list = []) -> bool:
-        self.commands.append([text, command, args])
+        # commands should be lowercase and less than 32 characters for menu to work
+        self.commands.append([text.lower()[:32], command, args])
 
     def set_handler(self, name: str, _handler: object) -> bool:
         self._handlers[name] = _handler
@@ -263,7 +286,7 @@ class TelegramBot:
                 f.write(chunk)
         return True
 
-    def _auto_help_obj(self, chat_id, cmd):
+    def _auto_help_obj(self, chat_id, cmd, *args, **kwargs):
         msg = ""
         for _command in self.commands:
             cmd_text = _command[0]
@@ -286,8 +309,11 @@ class TelegramBot:
     def logger(self, *args):
         print(*args)
 
-    def broadcast_message(self, text):
+    def broadcast_message(self, text, ids_list=[]):
         for _id in self.all_chat_ids():
+            if ids_list:
+                if _id not in ids_list:
+                    continue
             self.send_message(_id, text)
 
     def setWebhook(self, url_endpoint):

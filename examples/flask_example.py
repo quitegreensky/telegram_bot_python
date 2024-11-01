@@ -30,6 +30,9 @@ mybot.add_command("/hello", hello_callback)
 mybot.set_handler("regular", regular_message_handler)
 mybot.activate_handler("regular")
 
+# init menu after adding all commands
+mybot.init_menu()
+
 app = Flask(__name__)
 
 @app.route(f"/webhook/{secret}", methods=["GET", "POST"])
