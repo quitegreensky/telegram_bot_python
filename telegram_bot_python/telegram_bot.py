@@ -19,7 +19,7 @@ class TelegramBot:
 
     def init_menu(self):
         commands = [
-            {"command": _command[0][1:], "description": _command[0][1:]}  # Remove "/" from command text
+            {"command": _command[0][1:], "description": _command[3]}  # Remove "/" from command text
             for _command in self.commands
             if not _command[0].startswith("/_") and _command[0] != "/help"
         ]
@@ -34,14 +34,14 @@ class TelegramBot:
         )
         if response.status_code != 200:
             print("Failed to set bot commands:", response.text)
-            return True
-        else:
-            print("Bot command menu set successfully!")
             return False
+        else:
+            return True
 
-    def add_command(self, text: str, command: object, args: list = []) -> bool:
-        # commands should be lowercase and less than 32 characters for menu to work
-        self.commands.append([text.lower()[:32], command, args])
+    def add_command(self, text: str, command: object, args: list = [], description = None) -> bool:
+        if not description:
+            description = text[1:]
+        self.commands.append([text.lower()[:32], command, args, description])
 
     def set_handler(self, name: str, _handler: object) -> bool:
         self._handlers[name] = _handler
@@ -294,7 +294,7 @@ class TelegramBot:
                 continue
             if cmd_text=="/help":
                 continue
-            msg+=f"{cmd_text}\n"
+            msg+=f"{cmd_text} - {_command[3]}\n"
         self.send_message(chat_id, msg)
 
     def run_bot(self, update_interval=1):
