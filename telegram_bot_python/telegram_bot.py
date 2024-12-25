@@ -2,16 +2,27 @@ import requests
 import time
 import json
 import threading
-from pprint import pprint
+import pickle
+import os
 
 
 class TelegramBot:
     def __init__(self, token, db_file, auto_help=True) -> None:
         self.token = token
+        self.current_dir = os.path.dirname(os.path.abspath(__file__))
+        self._tmp_path = os.path.join(self.current_dir, "tmp")
+        if not os.path.exists(self._tmp_path):
+            os.makedirs(self._tmp_path)
+
+        self._commands_path = os.path.join(self._tmp_path, "commands")
+        self._active_handler_path = os.path.join(self._tmp_path, "active_handler")
+        self._handlers_path = os.path.join(self._tmp_path, "handlers")
+
         self.db_file = db_file
         self.commands = []
-        self._handler = None # handler for non command messages
+        self._handler = None
         self._handlers = {}
+
 
         self.auto_help=auto_help
         if self.auto_help:
@@ -34,27 +45,79 @@ class TelegramBot:
                 json=payload
             )
         except Exception as e:
-            print(f"failed to init telegram menu {repr(e)}")
-            return False
+            print(f"faild to init menu {repr(e)}")
+            return
         if response.status_code != 200:
             print("Failed to set bot commands:", response.text)
             return False
         else:
             return True
 
+    @property
+    def commands(self):
+        try:
+            with open(self._commands_path, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            return []  # Return None if the file doesn't exist
+        except Exception as e:
+            raise RuntimeError(f"Failed to load object: {e}")
+
+    @commands.setter
+    def commands(self, val):
+        with open(self._commands_path, 'wb') as f:
+            pickle.dump(val, f)
+
     def add_command(self, text: str, command: object, args: list = [], description = None) -> bool:
         if not description:
             description = text[1:]
-        self.commands.append([text.lower()[:32], command, args, description])
+        commands = self.commands.copy()
+        commands.append([text.lower()[:32], command, args, description])
+        self.commands = commands
 
     def set_handler(self, name: str, _handler: object) -> bool:
-        self._handlers[name] = _handler
+        current_handlers = self._handlers.copy()
+        current_handlers[name] = _handler
+        self._handlers = current_handlers
 
     def activate_handler(self, name):
-        self._handler = self._handlers.get(name)
+        self._handler = self._handlers[name]
 
     def deactivate_handler(self):
         self._handler = None
+
+    @property
+    def _handlers(self):
+        try:
+            with open(self._handlers_path, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            return {}  # Return None if the file doesn't exist
+        except Exception as e:
+            raise RuntimeError(f"Failed to load object: {e}")
+
+    @_handlers.setter
+    def _handlers(self, val):
+        with open(self._handlers_path, 'wb') as f:
+            pickle.dump(val, f)
+
+    @property
+    def _handler(self):
+        try:
+            with open(self._active_handler_path, 'rb') as f:
+                return pickle.load(f)
+        except FileNotFoundError:
+            return None  # Return None if the file doesn't exist
+        except Exception as e:
+            raise RuntimeError(f"Failed to load object: {e}")
+
+    @_handler.setter
+    def _handler(self, value):
+        try:
+            with open(self._active_handler_path, 'wb') as f:
+                pickle.dump(value, f)
+        except Exception as e:
+            raise RuntimeError(f"Failed to save object: {e}")
 
     def save_js(self, dic):
         try:
@@ -133,8 +196,8 @@ class TelegramBot:
         try:
             req = requests.post(message_url, data=data, files=files)
         except Exception as e:
-            print(f"failed to send telegram photo {repr(e)}")
-            return False
+            print(f"faild to send photo {repr(e)}")
+            return
         if req.status_code!=200:
             return
         return True
@@ -154,14 +217,16 @@ class TelegramBot:
         payload = {
             "chat_id": chat_id,
             "text": text,
+            "parse_mode": "HTML"
         }
         if inline_keyboard:
             payload["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
+
         try:
             req = requests.post(message_url, json=payload)
         except Exception as e:
-            print(f"failed to send telegram message {repr(e)}")
-            return False
+            print(f"faild to send message {repr(e)}")
+            return
         if req.status_code!=200:
             return
         return True
@@ -177,11 +242,12 @@ class TelegramBot:
         }
         if inline_keyboard:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
+
         try:
             req = requests.post(message_url, files=files, data=data)
         except Exception as e:
-            print(f"failed to send telegram doc {repr(e)}")
-            return False
+            print(f"faild to send document {repr(e)}")
+            return
         if req.status_code!=200:
             return
         return True
@@ -210,8 +276,8 @@ class TelegramBot:
             try:
                 req = requests.get(update_url, params=params)
             except Exception as e:
-                print(f"failed to get telegram update {repr(e)}")
-                return False
+                print(f"faild to get telegram update {repr(e)}")
+                return
             if req.status_code!=200:
                 return
             results = req.json()["result"]
@@ -247,18 +313,27 @@ class TelegramBot:
         else:
             if "photo" in message_content:
                 photo_id = message_content["photo"][-1]["file_id"]
-                if "caption" in message_content:
-                    sender_text = message_content["caption"]
-                else:
-                    sender_text = ""
+                sender_text = message_content.get("caption", "")
             elif "document" in message_content:
                 photo_id = message_content["document"]["file_id"]
-                if "caption" in message_content:
-                    sender_text = message_content["caption"]
-                else:
-                    sender_text = ""
+                sender_text = message_content.get("caption", "")
+            elif "audio" in message_content:
+                photo_id = message_content["audio"]["file_id"]
+                sender_text = message_content.get("caption", "")
             elif "sticker" in message_content:
                 sender_text = message_content["sticker"]["emoji"]
+            elif "voice" in message_content:
+                photo_id = message_content["voice"]["file_id"]
+                sender_text = ""  # Voice messages usually don't have captions
+            elif "video" in message_content:
+                photo_id = message_content["video"]["file_id"]
+                sender_text = message_content.get("caption", "")
+            elif "video_note" in message_content:
+                photo_id = message_content["video_note"]["file_id"]
+                sender_text = ""  # Video notes don't support captions
+            elif "animation" in message_content:  # e.g., GIFs
+                photo_id = message_content["animation"]["file_id"]
+                sender_text = message_content.get("caption", "")
             else:
                 # UnSupported message type
                 return
@@ -295,8 +370,8 @@ class TelegramBot:
         try:
             response = requests.get(url, params={"file_id": file_id})
         except Exception as e:
-            print(f"failed to get file path {repr(e)}")
-            return False
+            print(f"faild to get file path {repr(e)}")
+            return
         file_path = response.json()["result"]["file_path"]
         return file_path
 
@@ -305,8 +380,8 @@ class TelegramBot:
         try:
             response = requests.get(url, stream=True)
         except Exception as e:
-            print(f"failed to download file {repr(e)}")
-            return False
+            print(f"faild to download file {repr(e)}")
+            return
         with open(local_filename, 'wb') as f:
             for chunk in response.iter_content(chunk_size=256):
                 f.write(chunk)
@@ -344,11 +419,7 @@ class TelegramBot:
 
     def setWebhook(self, url_endpoint):
         update_url = f"https://api.telegram.org/bot{self.token}/setWebhook?url={url_endpoint}"
-        try:
-            req = requests.get(update_url)
-        except Exception as e:
-            print(f"failed to set webhook {repr(e)}")
-            return False
+        req = requests.get(update_url)
         if req.status_code!=200:
             return False
         answer = req.json()
@@ -356,11 +427,7 @@ class TelegramBot:
 
     def deleteWebhook(self):
         update_url = f"https://api.telegram.org/bot{self.token}/deleteWebhook"
-        try:
-            req = requests.get(update_url)
-        except Exception as e:
-            print(f"failed to delete webhook {repr(e)}")
-            return False
+        req = requests.get(update_url)
         if req.status_code!=200:
             raise
         return req.text
