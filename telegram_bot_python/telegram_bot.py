@@ -28,10 +28,14 @@ class TelegramBot:
             "commands": commands
         }
 
-        response = requests.post(
-            f"https://api.telegram.org/bot{self.token}/setMyCommands",
-            json=payload
-        )
+        try:
+            response = requests.post(
+                f"https://api.telegram.org/bot{self.token}/setMyCommands",
+                json=payload
+            )
+        except Exception as e:
+            print(f"failed to init telegram menu {repr(e)}")
+            return False
         if response.status_code != 200:
             print("Failed to set bot commands:", response.text)
             return False
@@ -126,7 +130,11 @@ class TelegramBot:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
         message_url = f"https://api.telegram.org/bot{self.token}/sendPhoto"
-        req = requests.post(message_url, data=data, files=files)
+        try:
+            req = requests.post(message_url, data=data, files=files)
+        except Exception as e:
+            print(f"failed to send telegram photo {repr(e)}")
+            return False
         if req.status_code!=200:
             return
         return True
@@ -149,8 +157,11 @@ class TelegramBot:
         }
         if inline_keyboard:
             payload["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
-
-        req = requests.post(message_url, json=payload)
+        try:
+            req = requests.post(message_url, json=payload)
+        except Exception as e:
+            print(f"failed to send telegram message {repr(e)}")
+            return False
         if req.status_code!=200:
             return
         return True
@@ -166,8 +177,11 @@ class TelegramBot:
         }
         if inline_keyboard:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
-
-        req = requests.post(message_url, files=files, data=data)
+        try:
+            req = requests.post(message_url, files=files, data=data)
+        except Exception as e:
+            print(f"failed to send telegram doc {repr(e)}")
+            return False
         if req.status_code!=200:
             return
         return True
@@ -193,7 +207,11 @@ class TelegramBot:
                 "offset": self.get_id_last_update()+1
             }
             update_url = f"https://api.telegram.org/bot{self.token}/getUpdates"
-            req = requests.get(update_url, params=params)
+            try:
+                req = requests.get(update_url, params=params)
+            except Exception as e:
+                print(f"failed to get telegram update {repr(e)}")
+                return False
             if req.status_code!=200:
                 return
             results = req.json()["result"]
@@ -274,13 +292,21 @@ class TelegramBot:
 
     def get_file_path(self, file_id):
         url = f"https://api.telegram.org/bot{self.token}/getFile"
-        response = requests.get(url, params={"file_id": file_id})
+        try:
+            response = requests.get(url, params={"file_id": file_id})
+        except Exception as e:
+            print(f"failed to get file path {repr(e)}")
+            return False
         file_path = response.json()["result"]["file_path"]
         return file_path
 
     def download_file(self, file_path, local_filename):
         url = f'https://api.telegram.org/file/bot{self.token}/{file_path}'
-        response = requests.get(url, stream=True)
+        try:
+            response = requests.get(url, stream=True)
+        except Exception as e:
+            print(f"failed to download file {repr(e)}")
+            return False
         with open(local_filename, 'wb') as f:
             for chunk in response.iter_content(chunk_size=256):
                 f.write(chunk)
@@ -318,7 +344,11 @@ class TelegramBot:
 
     def setWebhook(self, url_endpoint):
         update_url = f"https://api.telegram.org/bot{self.token}/setWebhook?url={url_endpoint}"
-        req = requests.get(update_url)
+        try:
+            req = requests.get(update_url)
+        except Exception as e:
+            print(f"failed to set webhook {repr(e)}")
+            return False
         if req.status_code!=200:
             return False
         answer = req.json()
@@ -326,7 +356,11 @@ class TelegramBot:
 
     def deleteWebhook(self):
         update_url = f"https://api.telegram.org/bot{self.token}/deleteWebhook"
-        req = requests.get(update_url)
+        try:
+            req = requests.get(update_url)
+        except Exception as e:
+            print(f"failed to delete webhook {repr(e)}")
+            return False
         if req.status_code!=200:
             raise
         return req.text
