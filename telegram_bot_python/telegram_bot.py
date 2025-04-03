@@ -40,7 +40,7 @@ class TelegramBot:
             "commands": commands
         }
 
-        response = self.requests.post(
+        response = self.request.post(
             f"https://api.telegram.org/bot{self.token}/setMyCommands",
             json=payload
         )
@@ -193,7 +193,7 @@ class TelegramBot:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
         message_url = f"https://api.telegram.org/bot{self.token}/sendPhoto"
-        req = self.requests.post(message_url, data=data, files=files)
+        req = self.request.post(message_url, data=data, files=files)
         if not req:
             print(f"faild to send photo {self.request.last_error}")
             return
@@ -220,7 +220,7 @@ class TelegramBot:
         if inline_keyboard:
             payload["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
-        req = self.requests.post(message_url, json=payload)
+        req = self.request.post(message_url, json=payload)
         if not req:
             print(f"faild to send message {self.request.last_error}")
             return
@@ -240,7 +240,7 @@ class TelegramBot:
         if inline_keyboard:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
-        req = self.requests.post(message_url, files=files, data=data)
+        req = self.request.post(message_url, files=files, data=data)
         if not req:
             print(f"faild to send message {self.request.last_error}")
             return
@@ -270,7 +270,7 @@ class TelegramBot:
             }
             update_url = f"https://api.telegram.org/bot{self.token}/getUpdates"
 
-            req = self.requests.get(update_url, params=params)
+            req = self.request.get(update_url, params=params)
             if not req:
                 print(f"faild to get update {self.request.last_error}")
                 return
@@ -363,7 +363,7 @@ class TelegramBot:
 
     def get_file_path(self, file_id):
         url = f"https://api.telegram.org/bot{self.token}/getFile"
-        response = self.requests.get(url, params={"file_id": file_id})
+        response = self.request.get(url, params={"file_id": file_id})
         if not response:
             print(f"faild to get file path {self.request.last_error}")
             return
@@ -372,7 +372,7 @@ class TelegramBot:
 
     def download_file(self, file_path, local_filename):
         url = f'https://api.telegram.org/file/bot{self.token}/{file_path}'
-        response = self.requests.get(url, stream=True)
+        response = self.request.get(url, stream=True)
         if not response:
             print(f"faild to download file {self.request.last_error}")
             return
@@ -413,7 +413,7 @@ class TelegramBot:
 
     def setWebhook(self, url_endpoint):
         update_url = f"https://api.telegram.org/bot{self.token}/setWebhook?url={url_endpoint}"
-        req = self.requests.get(update_url)
+        req = self.request.get(update_url)
         if not req:
             print(f"faild to set webhook {self.request.last_error}")
             return
@@ -424,7 +424,7 @@ class TelegramBot:
 
     def deleteWebhook(self):
         update_url = f"https://api.telegram.org/bot{self.token}/deleteWebhook"
-        req = self.requests.get(update_url)
+        req = self.request.get(update_url)
         if not req:
             print(f"faild to delete webhook {self.request.last_error}")
             return
