@@ -1,4 +1,4 @@
-import requests
+from better_requests import BetterRequests
 import time
 import json
 import threading
@@ -11,6 +11,7 @@ class TelegramBot:
         self.token = token
         self.current_dir = os.path.dirname(os.path.abspath(__file__))
         self._tmp_path = os.path.join(self.current_dir, "tmp")
+        self.request = BetterRequests()
         if not os.path.exists(self._tmp_path):
             os.makedirs(self._tmp_path)
 
@@ -39,13 +40,12 @@ class TelegramBot:
             "commands": commands
         }
 
-        try:
-            response = requests.post(
-                f"https://api.telegram.org/bot{self.token}/setMyCommands",
-                json=payload
-            )
-        except Exception as e:
-            print(f"faild to init menu {repr(e)}")
+        response = self.requests.post(
+            f"https://api.telegram.org/bot{self.token}/setMyCommands",
+            json=payload
+        )
+        if not response:
+            print(f"faild to init menu {self.request.last_error}")
             return
         if response.status_code != 200:
             print("Failed to set bot commands:", response.text)
@@ -193,10 +193,9 @@ class TelegramBot:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
         message_url = f"https://api.telegram.org/bot{self.token}/sendPhoto"
-        try:
-            req = requests.post(message_url, data=data, files=files)
-        except Exception as e:
-            print(f"faild to send photo {repr(e)}")
+        req = self.requests.post(message_url, data=data, files=files)
+        if not req:
+            print(f"faild to send photo {self.request.last_error}")
             return
         if req.status_code!=200:
             return
@@ -216,16 +215,14 @@ class TelegramBot:
         message_url = f"https://api.telegram.org/bot{self.token}/sendMessage"
         payload = {
             "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "HTML"
+            "text": text
         }
         if inline_keyboard:
             payload["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
-        try:
-            req = requests.post(message_url, json=payload)
-        except Exception as e:
-            print(f"faild to send message {repr(e)}")
+        req = self.requests.post(message_url, json=payload)
+        if not req:
+            print(f"faild to send message {self.request.last_error}")
             return
         if req.status_code!=200:
             return
@@ -243,10 +240,9 @@ class TelegramBot:
         if inline_keyboard:
             data["reply_markup"] = json.dumps({"inline_keyboard": inline_keyboard})
 
-        try:
-            req = requests.post(message_url, files=files, data=data)
-        except Exception as e:
-            print(f"faild to send document {repr(e)}")
+        req = self.requests.post(message_url, files=files, data=data)
+        if not req:
+            print(f"faild to send message {self.request.last_error}")
             return
         if req.status_code!=200:
             return
@@ -273,10 +269,10 @@ class TelegramBot:
                 "offset": self.get_id_last_update()+1
             }
             update_url = f"https://api.telegram.org/bot{self.token}/getUpdates"
-            try:
-                req = requests.get(update_url, params=params)
-            except Exception as e:
-                print(f"faild to get telegram update {repr(e)}")
+
+            req = self.requests.get(update_url, params=params)
+            if not req:
+                print(f"faild to get update {self.request.last_error}")
                 return
             if req.status_code!=200:
                 return
@@ -367,20 +363,18 @@ class TelegramBot:
 
     def get_file_path(self, file_id):
         url = f"https://api.telegram.org/bot{self.token}/getFile"
-        try:
-            response = requests.get(url, params={"file_id": file_id})
-        except Exception as e:
-            print(f"faild to get file path {repr(e)}")
+        response = self.requests.get(url, params={"file_id": file_id})
+        if not response:
+            print(f"faild to get file path {self.request.last_error}")
             return
         file_path = response.json()["result"]["file_path"]
         return file_path
 
     def download_file(self, file_path, local_filename):
         url = f'https://api.telegram.org/file/bot{self.token}/{file_path}'
-        try:
-            response = requests.get(url, stream=True)
-        except Exception as e:
-            print(f"faild to download file {repr(e)}")
+        response = self.requests.get(url, stream=True)
+        if not response:
+            print(f"faild to download file {self.request.last_error}")
             return
         with open(local_filename, 'wb') as f:
             for chunk in response.iter_content(chunk_size=256):
@@ -419,7 +413,10 @@ class TelegramBot:
 
     def setWebhook(self, url_endpoint):
         update_url = f"https://api.telegram.org/bot{self.token}/setWebhook?url={url_endpoint}"
-        req = requests.get(update_url)
+        req = self.requests.get(update_url)
+        if not req:
+            print(f"faild to set webhook {self.request.last_error}")
+            return
         if req.status_code!=200:
             return False
         answer = req.json()
@@ -427,7 +424,10 @@ class TelegramBot:
 
     def deleteWebhook(self):
         update_url = f"https://api.telegram.org/bot{self.token}/deleteWebhook"
-        req = requests.get(update_url)
+        req = self.requests.get(update_url)
+        if not req:
+            print(f"faild to delete webhook {self.request.last_error}")
+            return
         if req.status_code!=200:
             raise
         return req.text

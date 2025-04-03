@@ -1,1 +1,1 @@
-requests
+https://github.com/quitegreensky/better_requests/archive/refs/heads/main.zip
